@@ -1,0 +1,7 @@
+{
+  "name":"carbonlens-vercel",
+  "version":"3.0.0",
+  "private":true,
+  "description":"CarbonLens static Vercel-ready carbon footprint and campus sustainability dashboard",
+  "scripts":{"start":"python -m http.server 4173","check":"node --check app.js"}
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CarbonLens — Personal & Campus Carbon Intelligence</title>
+<meta name="description" content="CarbonLens estimates everyday carbon footprint, tracks monthly trends, ranks reduction opportunities and campus challenges.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"><span></span><span></span><span></span></div>
+<header class="topbar">
+  <a class="brand" href="#top"><span class="brand-icon">🌿</span><span><b>CarbonLens</b><small>Carbon intelligence for people & campuses</small></span></a>
+  <nav><button class="nav-btn active" data-view="personal">👤 Personal</button><button class="nav-btn" data-view="campus">🏫 Campus</button></nav>
+  <div class="top-actions"><button id="authBtn" class="secondary top-account">👤 Sign in</button><button id="accountMenuBtn" class="icon-action" title="Account">◎</button><button id="themeBtn" class="icon-action" aria-label="Switch theme">🌙</button><button id="resetBtn" class="icon-action" title="Reset demo data">↺</button></div>
+</header>
+<main id="top" class="shell">
+  <section class="hero card">
+    <div><span class="eyebrow">CARBON FOOTPRINT • DEMO READY</span><h1>Measure what matters.<br><em>Act on the biggest wins.</em></h1><p>Log travel, electricity, food and waste. CarbonLens turns activity into CO₂e, compares it with a benchmark, and ranks reductions by estimated savings.</p><div class="hero-actions"><button class="primary" id="logHero">＋ Log activity</button><button class="secondary" id="demoBtn">✨ Restore demo dataset</button></div></div>
+    <div class="hero-orbit"><div class="orbit-core">🌎<strong id="heroTotal">0.0</strong><span>kg CO₂e / month</span></div><i>🚗</i><i>⚡</i><i>🥗</i><i>♻️</i></div>
+  </section>
+
+  <section class="metrics">
+    <article class="metric card"><span>Monthly footprint</span><strong id="metricTotal">0.0 <small>kg</small></strong><label id="metricDelta">Demo baseline</label></article>
+    <article class="metric card"><span>Benchmark</span><strong id="metricBenchmark">—</strong><label id="metricBenchmarkText">Compared with monthly average</label></article>
+    <article class="metric card"><span>Potential reduction</span><strong id="metricSavings">0.0 <small>kg</small></strong><label>From ranked actions</label></article>
+    <article class="metric card"><span>Challenge savings</span><strong id="metricChallenge">0.0 <small>kg</small></strong><label id="metricStreak">0 check-ins</label></article>
+  </section>
+
+  <section class="workspace">
+    <div class="main-col">
+      <section class="card panel" id="dashboardPanel">
+        <div class="panel-head"><div><span class="eyebrow">DASHBOARD</span><h2 id="dashboardTitle">Personal footprint</h2></div><div class="segmented"><button class="active" data-period="6">6 months</button><button data-period="12">12 months</button></div></div>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+        <div class="summary-grid"><div><span>Tracked records</span><b id="recordCount">0</b></div><div><span>Highest category</span><b id="topCategory">—</b></div><div><span>Average / month</span><b id="monthlyAverage">0 kg</b></div><div><span>Data quality</span><b>Activity-based</b></div></div>
+      </section>
+
+      <section class="card panel">
+        <div class="panel-head"><div><span class="eyebrow">BREAKDOWN</span><h2>Where emissions come from</h2></div><span class="source-chip">CO₂e</span></div>
+        <div class="breakdown"><div class="donut-box"><canvas id="breakdownChart"></canvas></div><div id="categoryBars" class="category-bars"></div></div>
+      </section>
+
+      <section class="card panel" id="activityPanel">
+        <div class="panel-head"><div><span class="eyebrow">ACTIVITY LOG</span><h2>Log an activity</h2></div><span class="source-chip">Standard factors</span></div>
+        <div class="activity-tabs"><button class="active" data-type="travel">🚗 Travel</button><button data-type="electricity">⚡ Electricity</button><button data-type="food">🥗 Food</button><button data-type="waste">♻️ Waste</button></div>
+        <form id="activityForm" class="form-grid">
+          <input type="hidden" id="activityType" value="travel">
+          <label>Date<input type="date" id="activityDate" required></label>
+          <div id="travelFields" class="fields"><label>Distance (km)<input id="distance" type="number" min="0" step="0.1" value="8" required></label><label>Mode<select id="travelMode"><option value="car">🚗 Car</option><option value="bus">🚌 Bus</option><option value="train">🚆 Train / metro</option><option value="flight">✈️ Flight</option><option value="bike">🚲 Bike</option><option value="walk">🚶 Walk</option></select></label></div>
+          <div id="electricityFields" class="fields hidden"><label>Electricity (kWh)<input id="kwh" type="number" min="0" step="0.1" value="30"></label><label>Bill OCR <input id="billFile" type="file" accept="image/*"></label><small id="ocrStatus" class="hint full">Upload a bill photo to detect kWh. Always verify OCR before saving.</small></div>
+          <div id="foodFields" class="fields hidden"><label>Meals / servings<input id="meals" type="number" min="0" step="1" value="2"></label><label>Meal pattern<select id="foodType"><option value="plant">🌱 Plant-rich</option><option value="mixed">🥗 Mixed</option><option value="meat">🍗 Meat-heavy</option></select></label></div>
+          <div id="wasteFields" class="fields hidden"><label>Waste (kg)<input id="wasteKg" type="number" min="0" step="0.1" value="1"></label><label>Disposal<select id="wasteType"><option value="landfill">🗑 Landfill</option><option value="recycled">♻️ Recycled</option><option value="composted">🌱 Composted</option></select></label></div>
+          <button class="primary full" type="submit">＋ Add to footprint</button>
+        </form>
+      </section>
+
+      <section class="card panel">
+        <div class="panel-head"><div><span class="eyebrow">RECENT DATA</span><h2>Activity history</h2></div><button class="secondary" id="csvBtn">↓ CSV</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Activity</th><th>CO₂e</th><th></th></tr></thead><tbody id="activityTable"></tbody></table></div>
+      </section>
+    </div>
+
+    <aside class="side-col">
+      <section class="card panel sticky-card"><div class="panel-head"><div><span class="eyebrow">ACTION ENGINE</span><h2>Highest-impact reductions</h2></div></div><div id="recommendations" class="recommendations"></div></section>
+      <section class="card panel"><div class="panel-head"><div><span class="eyebrow">CHALLENGES</span><h2>Campus challenges</h2></div></div><div id="challenges" class="challenges"></div></section>
+      <section class="card panel"><div class="panel-head"><div><span class="eyebrow">LEADERBOARD</span><h2 id="leaderboardTitle">Teams</h2></div><select id="leaderboardType"><option value="hostel">Hostels</option><option value="department">Departments</option><option value="team">Teams</option></select></div><div id="leaderboard" class="leaderboard"></div></section>
+    </aside>
+  </section>
+
+  <section class="card panel campus-view" id="campusSection">
+    <div class="panel-head"><div><span class="eyebrow">CAMPUS INTELLIGENCE</span><h2>Campus-level footprint & monthly trend</h2></div><span class="demo-tag">SYNTHETIC DEMO DATA</span></div>
+    <div class="campus-kpis"><div><span>Campus monthly footprint</span><b id="campusTotal">0 tCO₂e</b></div><div><span>People represented</span><b>1,125</b></div><div><span>Current per-capita</span><b id="campusPerCapita">0 kg</b></div><div><span>Benchmark</span><b>160 kg / person</b></div></div>
+    <div class="chart-box"><canvas id="campusChart"></canvas></div>
+  </section>
+
+  
+<section class="card panel feature-panel"><div class="panel-head"><div><span class="eyebrow">SMART CAMPUS ACCESS</span><h2>QR attendance, face check-in & location</h2></div><span class="source-chip">Privacy-first demo</span></div><div class="feature-grid">
+<div class="feature-card"><b>▣ QR Check-in</b><p>Generate demo attendance QR codes or upload a QR image to verify it in-browser.</p><select id="demoQrSelect"><option value="attendance">Attendance QR</option><option value="no-car">No-Car Week</option><option value="energy">Energy Saver</option></select><div id="qrCanvas" class="qr-box"></div><div class="feature-actions"><button class="primary" id="qrGenerate">Generate QR</button><label class="secondary file-label">Upload QR<input id="qrUpload" type="file" accept="image/*"></label></div><small id="qrStatus" class="hint">Demo QR is generated locally.</small><div class="demo-qr-gallery"><a href="demo_qr/carbonlens-attendance.png" target="_blank"><img src="demo_qr/carbonlens-attendance.png" alt="Demo attendance QR"><span>Attendance</span></a><a href="demo_qr/carbonlens-no-car.png" target="_blank"><img src="demo_qr/carbonlens-no-car.png" alt="Demo No-Car Week QR"><span>No-Car Week</span></a><a href="demo_qr/carbonlens-energy.png" target="_blank"><img src="demo_qr/carbonlens-energy.png" alt="Demo Energy Saver QR"><span>Energy Saver</span></a></div></div>
+<div class="feature-card"><b>◉ Camera face check-in</b><p>Optional local face matching. Camera frames and face templates are kept on this device; nothing is uploaded by CarbonLens.</p><video id="faceVideo" class="face-video" autoplay muted playsinline></video><div class="feature-actions"><button class="secondary" id="faceStart">Start camera</button><button class="secondary" id="faceEnroll">Enroll face</button><button class="primary" id="faceVerify">Verify face</button><button class="secondary" id="faceStop">Stop</button></div><small id="faceStatus" class="hint">Camera is off until you choose Start camera.</small></div>
+<div class="feature-card"><b>⌖ Location tracking</b><p>Uses the browser Geolocation API only after you enable it. Useful for trip logging and campus geofencing demos.</p><div class="feature-actions"><button class="primary" id="startLocation">Start tracking</button><button class="secondary" id="stopLocation">Stop</button></div><div id="locationStatus" class="location-box">Location tracking is off.</div><a id="mapsLink" class="secondary map-link" href="https://www.google.com/maps" target="_blank" rel="noreferrer">Open Google Maps</a></div>
+<div class="feature-card maps-card"><b>📍 Google Maps view</b><p>Shows the latest browser location in a Google Maps embed. A Maps API key is not required for this simple link/embed mode; advanced map layers can be added later with a Vercel environment variable.</p><iframe id="mapsFrame" title="Google Maps location" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+</div></section>
+
+<section class="card panel">
+    <div class="panel-head"><div><span class="eyebrow">BONUS TOOLS</span><h2>Imports, offsets & reporting</h2></div></div>
+    <div class="bonus-grid">
+      <div class="bonus"><b>📷 Bill OCR</b><p>Import an electricity bill image and detect the kWh reading on-device.</p><button class="secondary" id="ocrFocus">Use OCR above</button></div>
+      <div class="bonus"><b>🧾 Trip CSV import</b><p>Import date, mode and distance columns from a trip export.</p><label class="secondary file-label">Choose CSV<input id="tripCsv" type="file" accept=".csv,text/csv"></label><small id="tripStatus" class="hint"></small></div>
+      <div class="bonus"><b>🌱 Offset registry guide</b><p>Choose a project only after checking current certification, methodology, vintage and retirement status in a recognized registry.</p><div class="source-links"><a href="https://registry.goldstandard.org/projects?countries=IN" target="_blank" rel="noreferrer">Gold Standard · India projects ↗</a><a href="https://registry.verra.org/" target="_blank" rel="noreferrer">Verra Registry ↗</a></div><span class="source-chip">No payment in demo</span></div>
+      <div class="bonus"><b>📄 Sustainability report</b><p>Export the current personal/campus metrics, factors, trends and actions as PDF.</p><button class="primary" id="pdfBtn">Export PDF</button></div>
+    </div>
+  </section>
+
+  <section class="card panel sources"><div class="panel-head"><div><span class="eyebrow">TRANSPARENT CALCULATION</span><h2>Emission factors & sources</h2></div></div><p class="hint">CarbonLens uses activity × emission-factor calculations. The default values below are prototype factors selected for demonstrability; replace them with institution-specific factors when available. Electricity uses India's Central Electricity Authority grid database. Transport factors are adapted from the UK Government 2026 conversion-factor framework; food factors use global food-system research processed by Our World in Data. Waste defaults are conservative prototype values and should be replaced with local waste-model factors for formal reporting.</p><div class="factor-table"><div><b>Activity</b><b>Default factor</b><b>Unit</b><b>Source</b></div><div><span>Car</span><span>0.192</span><span>kg CO₂e / km</span><span>UK Gov GHG Conversion Factors 2026*</span></div><div><span>Bus</span><span>0.089</span><span>kg CO₂e / passenger-km</span><span>UK Gov GHG Conversion Factors 2026*</span></div><div><span>Train / metro</span><span>0.041</span><span>kg CO₂e / passenger-km</span><span>UK Gov GHG Conversion Factors 2026*</span></div><div><span>Flight</span><span>0.246</span><span>kg CO₂e / passenger-km</span><span>UK Gov GHG Conversion Factors 2026*</span></div><div><span>Electricity</span><span>0.716</span><span>kg CO₂ / kWh</span><span>CEA India grid EF, FY2022–23</span></div><div><span>Plant-rich / mixed / meat-heavy meal</span><span>0.7 / 1.7 / 3.6</span><span>kg CO₂e / serving</span><span>Prototype mapping informed by OWID food footprint dataset*</span></div><div><span>Waste</span><span>0.58 / 0.12 / 0.06</span><span>kg CO₂e / kg</span><span>Prototype factors; localize for formal reporting</span></div></div><div class="source-links"><a href="https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026" target="_blank" rel="noreferrer">UK Government — 2026 conversion factors ↗</a><a href="https://cea.nic.in/cdm-co2-baseline-database/?lang=en" target="_blank" rel="noreferrer">Central Electricity Authority — CO₂ Baseline Database ↗</a><a href="https://ourworldindata.org/grapher/ghg-per-kg-poore" target="_blank" rel="noreferrer">Our World in Data — food footprint data ↗</a><a href="https://www.epa.gov/climateleadership/ghg-emission-factors-hub" target="_blank" rel="noreferrer">US EPA — GHG Emission Factors Hub ↗</a></div><small>*The displayed transport/meal values are application defaults for the prototype, not a claim that a single published table contains these exact values. Formal inventories should use the relevant factor for geography, mode, fuel and reporting year.</small></section>
+
+  <footer><b>CarbonLens</b> · Vercel-ready static prototype · Data is stored locally in this browser · Demo campus numbers are synthetic.</footer>
+</main>
+<div id="authModal" class="modal open"><div class="auth-card"><div class="auth-head"><div><span class="eyebrow">CARBONLENS ACCOUNT</span><h2>Sign in to CarbonLens</h2></div><button class="icon-action" onclick="hideAuth()">×</button></div><div class="auth-tabs"><button class="active" data-auth-tab="login">Sign in</button><button data-auth-tab="signup">Create account</button></div><div id="authError" class="auth-error"></div><form id="loginForm" class="auth-form"><label>Email<input id="loginEmail" type="email" required placeholder="you@example.com"></label><label>Password<input id="loginPassword" type="password" required placeholder="••••••••"></label><button class="primary" type="submit">Sign in</button><div class="demo-accounts"><b>Demo accounts</b><button type="button" class="secondary" data-demo-login="student@carbonlens.app" data-demo-pass="carbon123">Student · carbon123</button><button type="button" class="secondary" data-demo-login="admin@carbonlens.app" data-demo-pass="admin123">Admin · admin123</button></div></form><form id="signupForm" class="auth-form hidden"><label>Full name<input id="signupName" required></label><label>Email<input id="signupEmail" type="email" required></label><label>Password<input id="signupPassword" type="password" minlength="6" required></label><div class="form-grid"><label>Hostel<select id="signupHostel"><option>Hostel A</option><option>Hostel B</option><option>Hostel C</option></select></label><label>Department<select id="signupDept"><option>CSE</option><option>Mechanical</option><option>Civil</option><option>Biomedical</option></select></label><label>Team<select id="signupTeam"><option>Green Team</option><option>Eco Warriors</option><option>Energy Squad</option></select></label></div><button class="primary" type="submit">Create account</button><p class="hint">This static Vercel demo stores the account locally in this browser. For shared production accounts, connect Supabase/Firebase.</p></form></div></div><div id="accountPanel" class="account-panel"><b id="accountName">Guest</b><span>Local account</span><button class="secondary" id="logoutBtn">Sign out</button></div><div id="toast" class="toast" aria-live="polite"></div>
+<script src="app.js"></script>
+</body></html>
